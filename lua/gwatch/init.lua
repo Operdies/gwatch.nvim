@@ -1,7 +1,9 @@
 local M = {}
-local config = require("gwatch.config")
+local cfg = require("gwatch.config")
+local runner = require("gwatch.runner")
+local ui = require("gwatch.ui")
+local config = cfg.options
 local shown = false
-local GWATCH_PATH = ""
 
 local ll = vim.log.levels
 local notify = function(msg, level)
@@ -28,12 +30,12 @@ local getGwatchPath = function()
 end
 
 local ensureGwatch = function()
-	if GWATCH_PATH ~= "" and vim.fn.exepath(GWATCH_PATH) ~= "" then
+	if config.gwatchPath and config.gwatchPath ~= "" and vim.fn.exepath(config.gwatchPath) ~= "" then
 		return true
 	end
 
-	GWATCH_PATH = getGwatchPath()
-	if GWATCH_PATH ~= "" then
+	config.gwatchPath = getGwatchPath()
+	if config.gwatchPath ~= "" then
 		return true
 	end
 
@@ -45,8 +47,8 @@ local ensureGwatch = function()
 	local cmd = { gopath, "install", "github.com/operdies/gwatch@latest" }
 	notify("Gwatch not installed. Installing with " .. vim.inspect(cmd))
 	vim.fn.system(cmd)
-	GWATCH_PATH = getGwatchPath()
-	if GWATCH_PATH ~= "" then
+	config.gwatchPath = getGwatchPath()
+	if config.gwatchPath ~= "" then
 		return true
 	end
 	notify("Failed to initialize Gwatch: Go install failed.", ll.ERROR)
@@ -54,6 +56,8 @@ local ensureGwatch = function()
 end
 
 M.reload = function()
+	package.loaded["gwatch.runner"] = nil
+	package.loaded["gwatch.ui"] = nil
 	package.loaded["gwatch.config"] = nil
 	package.loaded["gwatch"] = nil
 	require("gwatch")
@@ -74,6 +78,8 @@ end
 
 -- Start gwatch in the current project root
 M.start = function()
+  runner.Watch()
+  ui.term_open()
 	if shown then
 		return
 	end
@@ -84,6 +90,8 @@ end
 
 -- Stop the current gwatch instance
 M.stop = function()
+  runner.Stop()
+  ui.term_close()
 	if not shown then
 		return
 	end

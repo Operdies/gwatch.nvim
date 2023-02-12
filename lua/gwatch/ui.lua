@@ -1,5 +1,4 @@
 local M = {}
-local config = require("gwatch.config").options
 
 M.term = {}
 M.fw_handle = 0
@@ -39,7 +38,10 @@ function M.term_open()
 	if M.term.opened ~= 0 then
 		return
 	end
-	local open_term_cmd = ":rightb" .. config.windowWidth .. "vsplit"
+  local config = require("gwatch.config")
+  local width = config.options.windowWidth or 40
+  vim.notify("Setting width " .. width)
+	local open_term_cmd = ":rightb" .. width .. "vsplit"
 	vim.cmd(open_term_cmd)
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_get_current_win()
@@ -48,6 +50,7 @@ function M.term_open()
 	vim.cmd("set scrollback=1")
 	vim.cmd("setlocal nonu")
 	vim.cmd("setlocal signcolumn=no")
+
 	vim.keymap.set("n", "q", M.term_close, { silent = true, buffer = true, noremap = false })
 	vim.keymap.set("t", "q", M.term_close, { silent = true, buffer = true, noremap = false })
 
@@ -58,7 +61,7 @@ function M.term_open()
 	M.term.chan = chan
 end
 
-function M.write_to_term(message, ok)
+function M.write_to_term(message)
 	M.term_open()
 
 	local h = M.term.current_line or -1
@@ -97,6 +100,7 @@ function M.term_close()
 	if M.term.window_handle == 0 then
 		return
 	end
+  require("gwatch.runner").Stop()
 	vim.api.nvim_win_close(M.term.window_handle, true)
 	M.term.opened = 0
 	M.term.window_handle = 0
@@ -131,10 +135,4 @@ function M.close_api()
 	end
 end
 
--- M.term_open()
--- M.write_to_term("Hello, buf", true)
--- for i = 1, 1000 do
--- 	local l = i
--- 	M.write_to_term("Hello, buf" .. i, true)
--- end
 return M
