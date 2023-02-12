@@ -1,5 +1,7 @@
 # gwatch.nvim
 
+![Example usage](./example.gif)
+
 This is a small nvim plugin which uses [gwatch](github.com/operdies/gwatch) to watch for file events, 
 and write the stdout to a buffer. The exact behavior can currently only be controlled per filetype.
 
