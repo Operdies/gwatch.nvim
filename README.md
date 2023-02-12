@@ -2,7 +2,7 @@
 
 ![Example usage](./example.gif)
 
-This is a small nvim plugin which uses [gwatch](github.com/operdies/gwatch) to watch for file events, 
+This is a small nvim plugin which uses [gwatch](https://github.com/operdies/gwatch) to watch for file events, 
 and write the stdout to a buffer. The exact behavior can currently only be controlled per filetype.
 
 The UI is heavily borrowed from [sniprun.nvim](https://github.com/michaelb/sniprun).
