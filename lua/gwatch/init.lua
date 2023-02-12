@@ -80,23 +80,14 @@ end
 M.start = function()
   runner.Watch()
   ui.term_open()
-	if shown then
-		return
-	end
 	shown = true
-	-- What are the defaults?
-	notify("Start gwatch", ll.INFO)
 end
 
 -- Stop the current gwatch instance
 M.stop = function()
   runner.Stop()
   ui.term_close()
-	if not shown then
-		return
-	end
 	shown = false
-	notify("Stop gwatch", ll.INFO)
 end
 
 ensureGwatch()
