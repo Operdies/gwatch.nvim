@@ -3,6 +3,9 @@ local Runner = { pid = nil }
 local function getopts()
 	local opts = {}
 	opts.cwd = vim.fn.getcwd()
+	-- connect both stdout and stderr to a pseudo-terminal which is passed to the on_stdout callback
+	-- When using this flag, we get colors for free in the terminal view
+	opts.pty = true
 	return opts
 end
 

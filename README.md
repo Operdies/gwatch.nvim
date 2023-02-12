@@ -10,6 +10,8 @@ The UI is heavily borrowed from [sniprun.nvim](https://github.com/michaelb/snipr
 I am personally loading this with [LazyVim](https://github.com/LazyVim/LazyVim).
 Below is a config with some example configuration.
 
+The primary motivation for this plugin is to automatically do something when I update a source file.
+
 ```lua
 {
   "Operdies/gwatch.nvim",
