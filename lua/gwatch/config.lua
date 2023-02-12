@@ -1,37 +1,22 @@
 local M = {}
-local ui = require("gwatch.ui")
 
 local defaultSettings = {
+	-- The width of the UI window
 	windowWidth = 50,
+	-- Options in this block are the default independent of language
 	default = {
+		-- Check the output of `gwatch --help` for specific information about flags
 		eventMask = "write",
 		mode = "kill",
 		patterns = "**",
-		callback = ui.write_to_term,
+		callback = require("gwatch.ui").write_to_term,
+		-- %e and %f respectively expand to the event, and the file it affected
 		command = "echo %e %f",
-	},
-	lang = {
-		go = {
-			patterns = "**.go",
-			command = "go build -o ./out .; ./out",
-			callback = function(s)
-				ui.write_to_term(s)
-			end,
-		},
-		rust = {
-			patterns = "**.rs",
-			command = "cargo run",
-		},
-		lua = {
-			patterns = "**.lua",
-			callback = vim.notify,
-			command = "echo %e %f",
-		},
 	},
 }
 
 function M.setup(options)
-	M.options = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
+	M.options = vim.tbl_deep_extend("force", {}, M.options or {}, defaultSettings, options or {})
 end
 
 M.setup()

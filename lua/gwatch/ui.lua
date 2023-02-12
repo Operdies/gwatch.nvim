@@ -40,7 +40,6 @@ function M.term_open()
 	end
   local config = require("gwatch.config")
   local width = config.options.windowWidth or 40
-  vim.notify("Setting width " .. width)
 	local open_term_cmd = ":rightb" .. width .. "vsplit"
 	vim.cmd(open_term_cmd)
 	local buf = vim.api.nvim_create_buf(false, true)

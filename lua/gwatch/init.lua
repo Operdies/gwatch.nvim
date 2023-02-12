@@ -2,7 +2,6 @@ local M = {}
 local cfg = require("gwatch.config")
 local runner = require("gwatch.runner")
 local ui = require("gwatch.ui")
-local config = cfg.options
 local shown = false
 
 local ll = vim.log.levels
@@ -30,6 +29,7 @@ local getGwatchPath = function()
 end
 
 local ensureGwatch = function()
+  local config = require("gwatch.config").options
 	if config.gwatchPath and config.gwatchPath ~= "" and vim.fn.exepath(config.gwatchPath) ~= "" then
 		return true
 	end
@@ -64,7 +64,7 @@ M.reload = function()
 end
 
 M.setup = function(options)
-	config.setup(options)
+	cfg.setup(options)
 end
 
 -- Show or hide the window
