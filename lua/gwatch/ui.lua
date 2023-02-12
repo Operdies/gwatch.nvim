@@ -9,20 +9,12 @@ M.term.current_line = -1
 M.term.chan = -1
 M.borders = "single"
 
-local namespace_name = "gwatch.nvim"
-
-function M.fw_open(row, column, message, ok)
+function M.fw_open(row, column)
 	M.fw_close()
-	local namespace_id = vim.api.nvim_create_namespace(namespace_name)
 	local w = 0
 	local h = -1
 	local bp = { row, column }
 	local bufnr = vim.api.nvim_create_buf(false, true)
-	for line in message:gmatch("([^\n]*)\n?") do
-		h = h + 1
-		w = math.max(w, string.len(line))
-		vim.api.nvim_buf_set_lines(bufnr, h, h + 1, false, { line })
-	end
 	M.fw_handle = vim.api.nvim_open_win(bufnr, false, {
 		relative = "win",
 		width = w + 1,
@@ -38,8 +30,8 @@ function M.term_open()
 	if M.term.opened ~= 0 then
 		return
 	end
-  local config = require("gwatch.config")
-  local width = config.options.windowWidth or 40
+	local config = require("gwatch.config")
+	local width = config.options.windowWidth or 40
 	local open_term_cmd = ":rightb" .. width .. "vsplit"
 	vim.cmd(open_term_cmd)
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -50,8 +42,8 @@ function M.term_open()
 	vim.cmd("setlocal nonu")
 	vim.cmd("setlocal signcolumn=no")
 
-	vim.keymap.set("n", "q", M.term_close, { silent = true, buffer = true, noremap = false })
-	vim.keymap.set("t", "q", M.term_close, { silent = true, buffer = true, noremap = false })
+	vim.keymap.set("n", "q", M.close_all, { silent = true, buffer = true, noremap = false })
+	vim.keymap.set("t", "q", M.close_all, { silent = true, buffer = true, noremap = false })
 
 	vim.cmd("wincmd p")
 	M.term.opened = 1
@@ -60,26 +52,21 @@ function M.term_open()
 	M.term.chan = chan
 end
 
+local function nilOrWhitespace(s)
+	return s == nil or string.match(s, "^%s*(.-)%s*$") == ""
+end
+
 function M.write_to_term(message)
-	M.term_open()
-
-	local h = M.term.current_line or -1
-
-	for line in message:gmatch("([^\n]*)\n?") do
-		h = h + 1
-		vim.api.nvim_chan_send(M.term.chan, line)
-		vim.api.nvim_chan_send(M.term.chan, "\n\r")
+	if nilOrWhitespace(message) then
+		return
 	end
-	vim.api.nvim_chan_send(M.term.chan, "\n\r")
-	M.term.current_line = h
+	M.term_open()
+	vim.api.nvim_chan_send(M.term.chan, message)
 end
 
 function M.close_all()
-	M.fw_close()
-	M.clear_virtual_text()
 	M.term_close()
-
-	M.close_api()
+	M.fw_close()
 end
 
 function M.fw_close()
@@ -90,48 +77,17 @@ function M.fw_close()
 	M.fw_handle = 0
 end
 
-function M.clear_virtual_text()
-	local ns = vim.api.nvim_create_namespace(namespace_name)
-	vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
-end
-
 function M.term_close()
 	if M.term.window_handle == 0 then
 		return
 	end
-  require("gwatch.runner").Stop()
+	require("gwatch.runner").Stop()
 	vim.api.nvim_win_close(M.term.window_handle, true)
 	M.term.opened = 0
 	M.term.window_handle = 0
 	M.term.buffer = -1
 	M.term.current_line = 0
 	M.term.chan = -1
-end
-
-function M.send_api(message, ok)
-	local d = {}
-	d.message = message
-	if ok then
-		d.status = "ok"
-	else
-		d.status = "error"
-	end
-	local listeners = require("sniprun.api").listeners
-
-	if type(next(listeners)) == "nil" then
-		print("Sniprun: No listener registered")
-	end
-
-	for _, f in ipairs(listeners) do
-		f(d)
-	end
-end
-
-function M.close_api()
-	local listeners = require("sniprun.api").closers
-	for _, f in ipairs(listeners) do
-		f()
-	end
 end
 
 return M

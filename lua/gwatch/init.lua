@@ -29,7 +29,7 @@ local getGwatchPath = function()
 end
 
 local ensureGwatch = function()
-  local config = require("gwatch.config").options
+	local config = require("gwatch.config").options
 	if config.gwatchPath and config.gwatchPath ~= "" and vim.fn.exepath(config.gwatchPath) ~= "" then
 		return true
 	end
@@ -55,15 +55,18 @@ local ensureGwatch = function()
 	return false
 end
 
+local user_opts = nil
 M.reload = function()
+	runner.Stop()
 	package.loaded["gwatch.runner"] = nil
 	package.loaded["gwatch.ui"] = nil
 	package.loaded["gwatch.config"] = nil
 	package.loaded["gwatch"] = nil
-	require("gwatch")
+	require("gwatch").setup(user_opts)
 end
 
 M.setup = function(options)
+	user_opts = options
 	cfg.setup(options)
 end
 
@@ -78,15 +81,15 @@ end
 
 -- Start gwatch in the current project root
 M.start = function()
-  runner.Watch()
-  ui.term_open()
+	runner.Watch()
+	ui.term_open()
 	shown = true
 end
 
 -- Stop the current gwatch instance
 M.stop = function()
-  runner.Stop()
-  ui.term_close()
+	runner.Stop()
+	ui.close_all()
 	shown = false
 end
 

@@ -28,50 +28,59 @@ function Runner.Watch(opts)
 		ftypeOpts = options.lang[ftype] or {}
 	end
 	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {})
-	local path = opts.path or vim.fn.getcwd()
 
 	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or nil
-	opts.on_stdout = function(_, data, _)
-		if cb == nil then
-			return
-		end
-		local s = ""
-		for _, value in ipairs(data) do
-			s = s .. value .. "\n"
-		end
-		if string.len(s) > 0 then
-			cb(s)
-		end
-	end
-	opts.on_stderr = opts.on_stdout
+	if cb ~= nil then
+		opts.on_stdout = function(_, data, _)
+			local s = ""
+			for _, value in ipairs(data) do
+				s = s .. value .. "\r\n"
+			end
 
-	local command = { options.gwatchPath }
+			if string.len(s) > 0 then
+				cb(s)
+			end
+		end
+		opts.on_stderr = opts.on_stdout
+	end
+
+	local arguments = {}
 	if opts.eventMask then
-		command[#command + 1] = "-eventMask"
-		command[#command + 1] = opts.eventMask
+		arguments["eventMask"] = opts.eventMask
 	end
 	if opts.mode then
-		command[#command + 1] = "-mode"
-		command[#command + 1] = opts.mode
+		arguments["mode"] = opts.mode
 	end
 	if opts.command then
-		command[#command + 1] = "-command"
-		command[#command + 1] = opts.command
+		arguments["command"] = opts.command
 	end
-	command[#command + 1] = path
 
+	local patterns = { opts.path or vim.fn.getcwd() }
 	if type(opts.patterns) == "string" then
-		command[#command + 1] = opts.patterns
+		table.insert(patterns, opts.patterns)
 	elseif type(opts.patterns) == "table" then
 		for _, pattern in ipairs(opts.patterns) do
-			command[#command + 1] = pattern
+			table.insert(patterns, pattern)
 		end
 	end
 
-	Runner.pid = vim.fn.jobstart(command, opts)
-	if cb ~= nil then
-		cb("gwatching\n" .. vim.inspect(command) .. "\nWith options\n" .. vim.inspect(opts))
+	local inspect = function(table)
+		return "\r\n" .. vim.inspect(table, { newline = "\r\n" }) .. "\r\n"
 	end
+
+	if cb ~= nil then
+		cb("gwatching" .. inspect(patterns) .. "With arguments" .. inspect(arguments))
+	end
+
+	local cmd = { options.gwatchPath }
+	for k, v in pairs(arguments) do
+		cmd[#cmd + 1] = "-" .. k
+		cmd[#cmd + 1] = v
+	end
+	for _, v in ipairs(patterns) do
+		cmd[#cmd + 1] = v
+	end
+	Runner.pid = vim.fn.jobstart(cmd, opts)
 end
 
 return Runner
