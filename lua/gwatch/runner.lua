@@ -21,6 +21,19 @@ function Runner.Stop()
 	end
 end
 
+local function stringJoin(strings, sep)
+	local len = #strings
+	if len == 0 then
+		return ""
+	end
+	local str = strings[1]
+	for i = 2, len do
+		local s = strings[i]
+		str = str .. sep .. s
+	end
+	return str
+end
+
 function Runner.Watch(opts)
 	local options = require("gwatch.config").options
 
@@ -35,11 +48,7 @@ function Runner.Watch(opts)
 	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or nil
 	if cb ~= nil then
 		opts.on_stdout = function(_, data, _)
-			local s = ""
-			for _, value in ipairs(data) do
-				s = s .. value .. "\r\n"
-			end
-
+			local s = stringJoin(data, "\r\n")
 			if string.len(s) > 0 then
 				cb(s)
 			end
