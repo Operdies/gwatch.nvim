@@ -82,7 +82,6 @@ end
 -- Start gwatch in the current project root
 M.start = function()
 	runner.Watch()
-	ui.term_open()
 	shown = true
 end
 
