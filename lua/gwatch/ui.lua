@@ -30,10 +30,17 @@ function M.term_open()
 	if M.term.opened ~= 0 then
 		return
 	end
-	local config = require("gwatch.config")
-	local width = config.options.windowWidth or 40
-	local open_term_cmd = ":rightb" .. width .. "vsplit"
-	vim.cmd(open_term_cmd)
+	local options = require("gwatch.config").options()
+	local width = options["window width"]
+	local height = options["window height"]
+	local pos = options["window position"]
+	local openCmd = {
+		left = ":lefta" .. width .. "vsplit",
+		right = ":rightb" .. width .. "vsplit",
+		above = ":abovel" .. height .. "split",
+		below = ":belowr" .. height .. "split",
+	}
+	vim.cmd(openCmd[pos])
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(win, buf)
@@ -60,7 +67,6 @@ function M.write_to_term(message)
 	if nilOrWhitespace(message) then
 		return
 	end
-	vim.api.nvim_win_set_width(M.term.window_handle, require("gwatch.config").options.windowWidth)
 	M.term_open()
 	vim.api.nvim_chan_send(M.term.chan, message)
 end

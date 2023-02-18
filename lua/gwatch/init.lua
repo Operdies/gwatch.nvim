@@ -29,13 +29,13 @@ local getGwatchPath = function()
 end
 
 local ensureGwatch = function()
-	local config = require("gwatch.config").options
-	if config.gwatchPath and config.gwatchPath ~= "" and vim.fn.exepath(config.gwatchPath) ~= "" then
+	local options = cfg.options()
+	if options.gwatchPath and options.gwatchPath ~= "" and vim.fn.exepath(options.gwatchPath) ~= "" then
 		return true
 	end
 
-	config.gwatchPath = getGwatchPath()
-	if config.gwatchPath ~= "" then
+	options = cfg.update({ gwatchPath = getGwatchPath() })
+	if options.gwatchPath ~= "" then
 		return true
 	end
 
@@ -47,8 +47,8 @@ local ensureGwatch = function()
 	local cmd = { gopath, "install", "github.com/operdies/gwatch@latest" }
 	notify("Gwatch not installed. Installing with " .. vim.inspect(cmd))
 	vim.fn.system(cmd)
-	config.gwatchPath = getGwatchPath()
-	if config.gwatchPath ~= "" then
+	options.gwatchPath = getGwatchPath()
+	if options.gwatchPath ~= "" then
 		return true
 	end
 	notify("Failed to initialize Gwatch: Go install failed.", ll.ERROR)
@@ -79,13 +79,12 @@ M.toggle = function()
 	end
 end
 
-local sessionOpts = {}
 -- Start gwatch in the current project root
 M.start = function()
 	if shown then
 		return
 	end
-	runner.Watch(sessionOpts)
+	runner.Watch()
 	shown = true
 end
 
@@ -98,7 +97,7 @@ M.stop = function()
 	end
 end
 
-local function maybeRestart()
+function M.maybeRestart()
 	if shown == false then
 		return
 	end
@@ -107,30 +106,7 @@ local function maybeRestart()
 end
 
 M.settings = function()
-	vim.ui.select(
-		{ "command", "mode" },
-		{ prompt = "Update which setting?", telescope = require("telescope.themes").get_cursor() },
-		function(setting)
-			if setting == "mode" then
-				vim.ui.select(
-					{ "block", "kill", "concurrent" },
-					{ prompt = "Which mode?", telescope = require("telescope.themes").get_cursor() },
-					function(mode)
-						sessionOpts[setting] = mode
-						maybeRestart()
-					end
-				)
-			else
-				vim.ui.input({ prompt = "Update " .. setting .. " to what?", default = nil }, function(value)
-					if value == "" then
-						value = nil
-					end
-					sessionOpts[setting] = value
-					maybeRestart()
-				end)
-			end
-		end
-	)
+	require("gwatch.config").settings()
 end
 
 ensureGwatch()

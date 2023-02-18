@@ -35,26 +35,26 @@ local function stringJoin(strings, sep)
 end
 
 function Runner.Watch(opts)
-	local options = require("gwatch.config").options
+	local cfg = require("gwatch.config")
 
+	local options = cfg.options()
 	Runner.Stop()
 	local ftype = vim.bo.filetype
 	local ftypeOpts = {}
 	if options and options.lang and options.lang[ftype] then
 		ftypeOpts = options.lang[ftype] or {}
 	end
-	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {})
+	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {}, cfg.overrides() or {})
 
-	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or nil
-	if cb ~= nil then
-		opts.on_stdout = function(_, data, _)
-			local s = stringJoin(data, "\r\n")
-			if string.len(s) > 0 then
-				cb(s)
-			end
+	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or function(s) end
+
+	opts.on_stdout = function(_, data, _)
+		local s = stringJoin(data, "\r\n")
+		if string.len(s) > 0 then
+			cb(s)
 		end
-		opts.on_stderr = opts.on_stdout
 	end
+	opts.on_stderr = opts.on_stdout
 
 	local arguments = {}
 	if opts.eventMask then
@@ -80,17 +80,15 @@ function Runner.Watch(opts)
 		return vim.inspect(table, { newline = "\r\n" })
 	end
 
-	if cb ~= nil then
-		cb(
-			"gwatching "
-				.. inspect(patterns)
-				.. "\r\nWith arguments "
-				.. inspect(arguments)
-				.. " in "
-				.. inspect(opts.cwd)
-				.. "\n\n\r"
-		)
-	end
+	cb(
+		"gwatching "
+			.. inspect(patterns)
+			.. "\r\nWith arguments "
+			.. inspect(arguments)
+			.. " in "
+			.. inspect(opts.cwd)
+			.. "\n\n\r"
+	)
 
 	local cmd = { options.gwatchPath }
 	for k, v in pairs(arguments) do
@@ -100,7 +98,14 @@ function Runner.Watch(opts)
 	for _, v in ipairs(patterns) do
 		cmd[#cmd + 1] = v
 	end
-	Runner.pid = vim.fn.jobstart(cmd, opts)
+	local ok = true
+	ok, Runner.pid = pcall(vim.fn.jobstart, cmd, opts)
+	if ok == false then
+		Runner.pid = nil
+		vim.notify("Failed to start command " .. vim.inspect(cmd), vim.log.levels.ERROR)
+		cb("Failed to start " .. inspect(cmd) .. "\r\n")
+		cb("Failed to start " .. inspect(options) .. "\r\n")
+	end
 end
 
 -- local pid =require("gwatch.runner").pid
