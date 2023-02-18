@@ -60,6 +60,7 @@ function M.write_to_term(message)
 	if nilOrWhitespace(message) then
 		return
 	end
+	vim.api.nvim_win_set_width(M.term.window_handle, require("gwatch.config").options.windowWidth)
 	M.term_open()
 	vim.api.nvim_chan_send(M.term.chan, message)
 end

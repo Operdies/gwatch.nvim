@@ -57,7 +57,7 @@ end
 
 local user_opts = nil
 M.reload = function()
-	runner.Stop()
+	M.stop()
 	package.loaded["gwatch.runner"] = nil
 	package.loaded["gwatch.ui"] = nil
 	package.loaded["gwatch.config"] = nil
@@ -79,17 +79,58 @@ M.toggle = function()
 	end
 end
 
+local sessionOpts = {}
 -- Start gwatch in the current project root
 M.start = function()
-	runner.Watch()
+	if shown then
+		return
+	end
+	runner.Watch(sessionOpts)
 	shown = true
 end
 
 -- Stop the current gwatch instance
 M.stop = function()
-	runner.Stop()
-	ui.close_all()
-	shown = false
+	if shown then
+		runner.Stop()
+		ui.close_all()
+		shown = false
+	end
+end
+
+local function maybeRestart()
+	if shown == false then
+		return
+	end
+	M.toggle()
+	M.toggle()
+end
+
+M.settings = function()
+	vim.ui.select(
+		{ "command", "mode" },
+		{ prompt = "Update which setting?", telescope = require("telescope.themes").get_cursor() },
+		function(setting)
+			if setting == "mode" then
+				vim.ui.select(
+					{ "block", "kill", "concurrent" },
+					{ prompt = "Which mode?", telescope = require("telescope.themes").get_cursor() },
+					function(mode)
+						sessionOpts[setting] = mode
+						maybeRestart()
+					end
+				)
+			else
+				vim.ui.input({ prompt = "Update " .. setting .. " to what?", default = nil }, function(value)
+					if value == "" then
+						value = nil
+					end
+					sessionOpts[setting] = value
+					maybeRestart()
+				end)
+			end
+		end
+	)
 end
 
 ensureGwatch()

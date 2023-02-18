@@ -67,7 +67,7 @@ function Runner.Watch(opts)
 		arguments["command"] = opts.command
 	end
 
-	local patterns = { opts.path or vim.fn.getcwd() }
+	local patterns = { "." }
 	if type(opts.patterns) == "string" then
 		table.insert(patterns, opts.patterns)
 	elseif type(opts.patterns) == "table" then
@@ -77,11 +77,19 @@ function Runner.Watch(opts)
 	end
 
 	local inspect = function(table)
-		return "\r\n" .. vim.inspect(table, { newline = "\r\n" }) .. "\r\n"
+		return vim.inspect(table, { newline = "\r\n" })
 	end
 
 	if cb ~= nil then
-		cb("gwatching" .. inspect(patterns) .. "With arguments" .. inspect(arguments))
+		cb(
+			"gwatching "
+				.. inspect(patterns)
+				.. "\r\nWith arguments "
+				.. inspect(arguments)
+				.. " in "
+				.. inspect(opts.cwd)
+				.. "\n\n\r"
+		)
 	end
 
 	local cmd = { options.gwatchPath }
@@ -94,5 +102,7 @@ function Runner.Watch(opts)
 	end
 	Runner.pid = vim.fn.jobstart(cmd, opts)
 end
+
+-- local pid =require("gwatch.runner").pid
 
 return Runner
