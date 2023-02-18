@@ -37,17 +37,18 @@ function M.term_open()
 	local openCmd = {
 		left = ":lefta" .. width .. "vsplit",
 		right = ":rightb" .. width .. "vsplit",
-		above = ":abovel" .. height .. "split",
-		below = ":belowr" .. height .. "split",
+		top = ":abovel" .. height .. "split",
+		bottom = ":belowr" .. height .. "split",
 	}
 	vim.cmd(openCmd[pos])
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_get_current_win()
 	vim.api.nvim_win_set_buf(win, buf)
 	local chan = vim.api.nvim_open_term(buf, {})
-	vim.cmd("set scrollback=1")
+	vim.cmd("set scrollback=100")
 	vim.cmd("setlocal nonu")
 	vim.cmd("setlocal signcolumn=no")
+	vim.cmd("norm G")
 
 	vim.keymap.set("n", "q", M.close_all, { silent = true, buffer = true, noremap = false })
 	vim.keymap.set("t", "q", M.close_all, { silent = true, buffer = true, noremap = false })

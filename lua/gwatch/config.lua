@@ -38,11 +38,11 @@ function M.overrides()
 end
 
 local settingsTree = {
-	command = { type = "input", prompt = "Set command to what?", default = nil },
-	["window width"] = { type = "input", prompt = "Set width to what?", default = "80" },
-	["window height"] = { type = "input", prompt = "Set height to what?", default = "20" },
+	command = { type = "input", default = nil },
+	["window width"] = { type = "input", default = "80" },
+	["window height"] = { type = "input", default = "20" },
 	mode = { type = "select", options = { "block", "kill", "concurrent" } },
-	["window position"] = { type = "select", options = { "left", "right", "above", "below" } },
+	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
 }
 
 local function maybeRestart()
@@ -63,6 +63,7 @@ M.settings = function()
 				return
 			end
 			if settings["type"] == "input" then
+				settings.prompt = "Update " .. name .. " to what?"
 				vim.ui.input(settings, function(value)
 					if value == "" then
 						value = nil
@@ -72,7 +73,7 @@ M.settings = function()
 				end)
 			elseif settings["type"] == "select" then
 				vim.ui.select(settings["options"], {
-					prompt = "Update " .. name .. " to what>",
+					prompt = "Update " .. name .. " to what?",
 					telescope = require("telescope.themes").get_cursor(),
 				}, function(value)
 					if sessionOptions[name] == value then
