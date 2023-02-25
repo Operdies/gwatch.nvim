@@ -26,6 +26,11 @@ function M.fw_open(row, column)
 	})
 end
 
+local stdin_handler = function(_, _, _, _) end
+function M.SetOnStdin(f)
+	stdin_handler = f
+end
+
 function M.term_open()
 	if M.term.opened ~= 0 then
 		return
@@ -43,15 +48,22 @@ function M.term_open()
 	vim.cmd(openCmd[pos])
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_get_current_win()
+
 	vim.api.nvim_win_set_buf(win, buf)
-	local chan = vim.api.nvim_open_term(buf, {})
+	local term_opts = {}
+
+	-- function OnInput(input, term, bufnr, data)
+	term_opts.on_input = function(input, term, bufnr, data)
+		stdin_handler(input, term, bufnr, data)
+	end
+
+	local chan = vim.api.nvim_open_term(buf, term_opts)
 	vim.cmd("set scrollback=100")
 	vim.cmd("setlocal nonu")
 	vim.cmd("setlocal signcolumn=no")
 	vim.cmd("norm G")
 
-	vim.keymap.set("n", "q", M.close_all, { silent = true, buffer = true, noremap = false })
-	vim.keymap.set("t", "q", M.close_all, { silent = true, buffer = true, noremap = false })
+	vim.keymap.set("n", "<C-c>", M.close_all, { silent = true, buffer = true, noremap = false })
 
 	vim.cmd("wincmd p")
 	M.term.opened = 1
@@ -65,9 +77,6 @@ local function nilOrWhitespace(s)
 end
 
 function M.write_to_term(message)
-	if nilOrWhitespace(message) then
-		return
-	end
 	M.term_open()
 	vim.api.nvim_chan_send(M.term.chan, message)
 end
@@ -96,6 +105,10 @@ function M.term_close()
 	M.term.buffer = -1
 	M.term.current_line = 0
 	M.term.chan = -1
+end
+
+function M.dimensions()
+	return { width = vim.fn.winwidth(M.window_handle), height = vim.fn.winheight(M.window_handle) }
 end
 
 return M

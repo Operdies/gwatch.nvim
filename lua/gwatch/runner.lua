@@ -1,7 +1,15 @@
 local Runner = { pid = nil }
 
 local function getopts()
-	local opts = {}
+	local ui = require("gwatch.ui")
+
+	function OnInput(input, term, bufnr, data)
+		vim.api.nvim_chan_send(Runner.pid, data)
+	end
+
+	ui.SetOnStdin(OnInput)
+	ui.term_open()
+	local opts = ui.dimensions()
 	opts.cwd = vim.fn.getcwd()
 	-- connect both stdout and stderr to a pseudo-terminal which is passed to the on_stdout callback
 	-- When using this flag, we get colors for free in the terminal view
@@ -44,9 +52,9 @@ function Runner.Watch(opts)
 	if options and options.lang and options.lang[ftype] then
 		ftypeOpts = options.lang[ftype] or {}
 	end
-	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {}, cfg.overrides() or {})
 
-	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or function(s) end
+	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {}, cfg.overrides() or {})
+	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or function(_) end
 
 	opts.on_stdout = function(_, data, _)
 		local s = stringJoin(data, "\r\n")
@@ -55,6 +63,10 @@ function Runner.Watch(opts)
 		end
 	end
 	opts.on_stderr = opts.on_stdout
+	opts.on_exit = function()
+    Runner.pid = nil
+		require("gwatch.ui").close_all()
+	end
 
 	local arguments = {}
 	if opts.eventMask then
