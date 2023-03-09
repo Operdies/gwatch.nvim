@@ -108,7 +108,10 @@ function M.term_close()
 end
 
 function M.dimensions()
-	return { width = vim.fn.winwidth(M.window_handle), height = vim.fn.winheight(M.window_handle) }
+	if M.term.window_handle == 0 then
+		M.term_open()
+	end
+	return { width = vim.fn.winwidth(M.term.window_handle), height = vim.fn.winheight(M.term.window_handle)}
 end
 
 return M

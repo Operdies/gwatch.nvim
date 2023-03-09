@@ -64,7 +64,7 @@ function Runner.Watch(opts)
 	end
 	opts.on_stderr = opts.on_stdout
 	opts.on_exit = function()
-    Runner.pid = nil
+		Runner.pid = nil
 		require("gwatch.ui").close_all()
 	end
 
