@@ -44,8 +44,24 @@ end
 
 function Runner.Watch(opts)
 	local cfg = require("gwatch.config")
-
 	local options = cfg.options()
+	local project_overrides = {}
+	-- get the current project directory
+	local project_dir = vim.fn.getcwd()
+	-- check if the current directory has a gwatch.cfg file
+	if vim.fn.filereadable(project_dir .. "/gwatch.json") == 1 then
+		-- if it does, then read it and use it as the config file
+		local content = vim.fn.readfile(project_dir .. "/gwatch.json")
+		-- overrides = vim.fn.json_decode(vim.fn.readfile(project_dir .. "/gwatch.cfg"))
+		local success
+		success, project_overrides = pcall(vim.fn.json_decode, content)
+		if not success then
+			vim.notify("Failed to parse gwatch.json file", vim.log.levels.ERROR)
+			project_overrides = {}
+		end
+		vim.notify(vim.inspect(project_overrides), vim.log.levels.INFO)
+	end
+
 	Runner.Stop()
 	local ftype = vim.bo.filetype
 	local ftypeOpts = {}
@@ -53,7 +69,20 @@ function Runner.Watch(opts)
 		ftypeOpts = options.lang[ftype] or {}
 	end
 
-	opts = vim.tbl_deep_extend("force", {}, getopts(), options.default, ftypeOpts, opts or {}, cfg.overrides() or {})
+	if project_overrides and project_overrides.lang and project_overrides.lang[ftype] then
+		ftypeOpts = vim.tbl_deep_extend("force", ftypeOpts, project_overrides.lang[ftype])
+	end
+
+	opts = vim.tbl_deep_extend(
+		"force",
+		{},
+		getopts(),
+		options.default,
+		opts or {},
+		project_overrides,
+		ftypeOpts,
+		cfg.overrides() or {}
+	)
 	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or function(_) end
 
 	opts.on_stdout = function(_, data, _)
