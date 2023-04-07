@@ -30,11 +30,30 @@ function M.update(options)
 end
 
 function M.options()
-	return vim.tbl_deep_extend("force", {}, defaultSettings, configOptions or {}, sessionOptions or {})
+	return vim.tbl_deep_extend("force", {}, defaultSettings, configOptions or {}, sessionOptions or {}, M.project_overrides() or {})
 end
 
 function M.overrides()
 	return sessionOptions
+end
+
+function M.project_overrides()
+	local project_overrides = {}
+	-- get the current project directory
+	local project_dir = vim.fn.getcwd()
+	-- check if the current directory has a gwatch.cfg file
+	if vim.fn.filereadable(project_dir .. "/gwatch.json") == 1 then
+		-- if it does, then read it and use it as the config file
+		local content = vim.fn.readfile(project_dir .. "/gwatch.json")
+		-- overrides = vim.fn.json_decode(vim.fn.readfile(project_dir .. "/gwatch.cfg"))
+		local success
+		success, project_overrides = pcall(vim.fn.json_decode, content)
+		if not success then
+			vim.notify("Failed to parse gwatch.json file", vim.log.levels.ERROR)
+			project_overrides = {}
+		end
+	end
+	return project_overrides
 end
 
 local settingsTree = {

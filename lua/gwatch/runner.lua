@@ -45,22 +45,7 @@ end
 function Runner.Watch(opts)
 	local cfg = require("gwatch.config")
 	local options = cfg.options()
-	local project_overrides = {}
-	-- get the current project directory
-	local project_dir = vim.fn.getcwd()
-	-- check if the current directory has a gwatch.cfg file
-	if vim.fn.filereadable(project_dir .. "/gwatch.json") == 1 then
-		-- if it does, then read it and use it as the config file
-		local content = vim.fn.readfile(project_dir .. "/gwatch.json")
-		-- overrides = vim.fn.json_decode(vim.fn.readfile(project_dir .. "/gwatch.cfg"))
-		local success
-		success, project_overrides = pcall(vim.fn.json_decode, content)
-		if not success then
-			vim.notify("Failed to parse gwatch.json file", vim.log.levels.ERROR)
-			project_overrides = {}
-		end
-		vim.notify(vim.inspect(project_overrides), vim.log.levels.INFO)
-	end
+	local project_overrides = cfg.project_overrides()
 
 	Runner.Stop()
 	local ftype = vim.bo.filetype
