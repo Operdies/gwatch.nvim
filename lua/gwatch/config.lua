@@ -30,7 +30,14 @@ function M.update(options)
 end
 
 function M.options()
-	return vim.tbl_deep_extend("force", {}, defaultSettings, configOptions or {}, sessionOptions or {}, M.project_overrides() or {})
+	return vim.tbl_deep_extend(
+		"force",
+		{},
+		defaultSettings,
+		configOptions or {},
+		sessionOptions or {},
+		M.project_overrides() or {}
+	)
 end
 
 function M.overrides()
@@ -62,6 +69,7 @@ local settingsTree = {
 	["window height"] = { type = "input", default = "20" },
 	mode = { type = "select", options = { "block", "kill", "concurrent" } },
 	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
+	profile = { type = "select", options = function() end },
 }
 
 local function maybeRestart()
@@ -69,9 +77,19 @@ local function maybeRestart()
 end
 
 M.settings = function()
+	local get_opts = function(tab)
+		if tab and tab.options and type(tab.options) == "function" then
+			return tab.options() or {}
+		end
+		return (tab and tab.options) or {}
+	end
+
 	local keyset = {}
-	for k, _ in pairs(settingsTree) do
-		keyset[#keyset + 1] = k
+	for k, v in pairs(settingsTree) do
+		local opts = get_opts(v)
+		if #opts > 0 then
+			keyset[#keyset + 1] = k
+		end
 	end
 	vim.ui.select(
 		keyset,
