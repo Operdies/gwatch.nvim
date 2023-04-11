@@ -108,6 +108,10 @@ M.settings = function()
 	require("gwatch.config").settings()
 end
 
+M.trigger = function()
+	require("gwatch.runner").Trigger()
+end
+
 ensureGwatch()
 
 return M

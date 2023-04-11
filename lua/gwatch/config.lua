@@ -78,6 +78,7 @@ local settingsTree = {
 	["window width"] = { type = "input", default = "80" },
 	["window height"] = { type = "input", default = "20" },
 	mode = { type = "select", options = { "block", "kill", "concurrent" } },
+	trigger = { type = "select", options = { "hotkey", "watch" } },
 	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
 	profile = {
 		type = "select",
