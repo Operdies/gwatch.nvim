@@ -36,12 +36,22 @@ function M.options()
 		defaultSettings,
 		configOptions or {},
 		sessionOptions or {},
-		M.project_overrides() or {}
+		M.project_overrides() or {},
+		M.profile() or {}
 	)
 end
 
 function M.overrides()
 	return sessionOptions
+end
+
+function M.profile()
+	local project_settings = M.project_overrides()
+	if project_settings and project_settings.profiles then
+		if sessionOptions.profile then
+			return project_settings.profiles[sessionOptions.profile]
+		end
+	end
 end
 
 function M.project_overrides()
@@ -69,7 +79,15 @@ local settingsTree = {
 	["window height"] = { type = "input", default = "20" },
 	mode = { type = "select", options = { "block", "kill", "concurrent" } },
 	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
-	profile = { type = "select", options = function() end },
+	profile = {
+		type = "select",
+		options = function()
+			local overrides = M.project_overrides()
+			if overrides and overrides.profiles then
+				return vim.tbl_keys(overrides.profiles)
+			end
+		end,
+	},
 }
 
 local function maybeRestart()
@@ -81,16 +99,18 @@ M.settings = function()
 		if tab and tab.options and type(tab.options) == "function" then
 			return tab.options() or {}
 		end
-		return (tab and tab.options) or {}
+		return tab.options
 	end
 
 	local keyset = {}
 	for k, v in pairs(settingsTree) do
 		local opts = get_opts(v)
-		if #opts > 0 then
+		-- filter out settings with 0 options
+		if opts == nil or #opts > 0 then
 			keyset[#keyset + 1] = k
 		end
 	end
+
 	vim.ui.select(
 		keyset,
 		{ prompt = "Update which setting?", telescope = require("telescope.themes").get_cursor() },
@@ -109,7 +129,7 @@ M.settings = function()
 					maybeRestart()
 				end)
 			elseif settings["type"] == "select" then
-				vim.ui.select(settings["options"], {
+				vim.ui.select(get_opts(settings), {
 					prompt = "Update " .. name .. " to what?",
 					telescope = require("telescope.themes").get_cursor(),
 				}, function(value)
