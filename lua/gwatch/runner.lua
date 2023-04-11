@@ -77,10 +77,6 @@ function Runner.Watch(opts)
 		end
 	end
 	opts.on_stderr = opts.on_stdout
-	opts.on_exit = function()
-		Runner.pid = nil
-		require("gwatch.ui").close_all()
-	end
 
 	local arguments = {}
 	if opts.eventMask then

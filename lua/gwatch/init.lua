@@ -98,11 +98,10 @@ M.stop = function()
 end
 
 function M.maybeRestart()
-	if shown == false then
-		return
+	if shown then
+		runner.Watch()
+		shown = true
 	end
-	M.toggle()
-	M.toggle()
 end
 
 M.settings = function()
