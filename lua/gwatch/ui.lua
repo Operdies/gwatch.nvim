@@ -31,6 +31,34 @@ function M.SetOnStdin(f)
 	stdin_handler = f
 end
 
+function M:set_option(name, value, win)
+	if win then
+		return vim.api.nvim_win_set_option(self.win, name, value)
+	else
+		return vim.api.nvim_buf_set_option(self.buf, name, value)
+	end
+end
+
+-- These options were shamelesly stolen from Trouble.nvim -- Thanks Folke!
+-- Calling this function after the terminal has been attached to the buffer causes errors
+-- This likely means that some of the options are overridden. Not sure which ones.
+function M:set_options()
+	self:set_option("bufhidden", "wipe")
+	self:set_option("buftype", "nofile")
+	self:set_option("swapfile", false)
+	self:set_option("buflisted", false)
+	self:set_option("winfixwidth", true, true)
+	self:set_option("wrap", false, true)
+	self:set_option("spell", false, true)
+	self:set_option("list", false, true)
+	self:set_option("winfixheight", true, true)
+	self:set_option("scrollback", 100)
+	self:set_option("number", false, true)
+	self:set_option("signcolumn", "no", true)
+	self:set_option("modifiable", true)
+	self:set_option("readonly", false)
+end
+
 function M.term_open()
 	if M.term.opened ~= 0 then
 		return
@@ -48,19 +76,18 @@ function M.term_open()
 	vim.cmd(openCmd[pos])
 	local buf = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_get_current_win()
+	M.buf = buf
+	M.win = win
 
 	vim.api.nvim_win_set_buf(win, buf)
 	local term_opts = {}
 
-	-- function OnInput(input, term, bufnr, data)
 	term_opts.on_input = function(input, term, bufnr, data)
 		stdin_handler(input, term, bufnr, data)
 	end
 
+	M:set_options()
 	local chan = vim.api.nvim_open_term(buf, term_opts)
-	vim.cmd("set scrollback=100")
-	vim.cmd("setlocal nonu")
-	vim.cmd("setlocal signcolumn=no")
 	vim.cmd("norm G")
 
 	vim.keymap.set("n", "<C-c>", M.close_all, { silent = true, buffer = true, noremap = false })
@@ -70,10 +97,6 @@ function M.term_open()
 	M.term.window_handle = win
 	M.term.buffer = buf
 	M.term.chan = chan
-end
-
-local function nilOrWhitespace(s)
-	return s == nil or string.match(s, "^%s*(.-)%s*$") == ""
 end
 
 function M.write_to_term(message)
@@ -92,6 +115,11 @@ function M.fw_close()
 	end
 	vim.api.nvim_win_close(M.fw_handle, true)
 	M.fw_handle = 0
+
+	if M.auto_cmd ~= nil then
+		vim.api.nvim_del_autocmd(M.auto_cmd)
+		M.auto_cmd = nil
+	end
 end
 
 function M.term_close()
@@ -111,7 +139,7 @@ function M.dimensions()
 	if M.term.window_handle == 0 then
 		M.term_open()
 	end
-	return { width = vim.fn.winwidth(M.term.window_handle), height = vim.fn.winheight(M.term.window_handle)}
+	return { width = vim.fn.winwidth(M.term.window_handle), height = vim.fn.winheight(M.term.window_handle) }
 end
 
 return M
