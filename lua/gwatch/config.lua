@@ -24,25 +24,29 @@ function M.setup(options)
 	configOptions = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
 end
 
-function M.update(options)
-	sessionOptions = vim.tbl_deep_extend("force", {}, configOptions, options or {})
+function M.update_session_options(options)
+	sessionOptions = vim.tbl_deep_extend("force", {}, sessionOptions, options or {})
 	return M.options()
 end
 
 function M.options()
-	return vim.tbl_deep_extend(
-		"force",
-		{},
-		defaultSettings,
-		configOptions or {},
-		sessionOptions or {},
-		M.project_overrides() or {},
-		M.profile() or {}
-	)
-end
+	local ftype = vim.bo.filetype
 
-function M.overrides()
-	return sessionOptions
+	-- merge the language specific options with the fallback optionsof a given table
+	local with_lang = function(table)
+		table = table or {}
+		if table.lang and table.lang[ftype] then
+			table = vim.tbl_deep_extend("force", {}, table, table.lang[ftype])
+			table.lang = nil
+		end
+		return table
+	end
+
+	local cfg = with_lang(configOptions)
+	local project_overrides = with_lang(M.project_overrides())
+	local session = with_lang(sessionOptions)
+
+	return vim.tbl_deep_extend("force", {}, defaultSettings, defaultSettings.default, cfg, project_overrides, session)
 end
 
 function M.profile()
@@ -62,7 +66,7 @@ function M.project_overrides()
 	if vim.fn.filereadable(project_dir .. "/gwatch.json") == 1 then
 		-- if it does, then read it and use it as the config file
 		local content = vim.fn.readfile(project_dir .. "/gwatch.json")
-		-- overrides = vim.fn.json_decode(vim.fn.readfile(project_dir .. "/gwatch.cfg"))
+
 		local success
 		success, project_overrides = pcall(vim.fn.json_decode, content)
 		if not success then
@@ -82,6 +86,16 @@ local settingsTree = {
 	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
 	profile = {
 		type = "select",
+		setter = function(name)
+			local project_settings = M.project_overrides()
+			if project_settings and project_settings.profiles and project_settings.profiles[name] then
+				local profile = project_settings.profiles[name]
+				-- Unset lang overrides and environment. Otherwise we might unintentionally keep unwanted settings around when swiching profiles
+				sessionOptions.lang = nil
+				sessionOptions.environment = nil
+				M.update_session_options(profile)
+			end
+		end,
 		options = function()
 			local overrides = M.project_overrides()
 			if overrides and overrides.profiles then
@@ -120,13 +134,19 @@ M.settings = function()
 			if settings == nil then
 				return
 			end
+			local function call_setter(value)
+				sessionOptions[name] = value
+				if settings.setter and type(settings.setter) == "function" then
+					settings.setter(value)
+				end
+			end
 			if settings["type"] == "input" then
 				settings.prompt = "Update " .. name .. " to what?"
 				vim.ui.input(settings, function(value)
 					if value == "" then
 						value = nil
 					end
-					sessionOptions[name] = value
+					call_setter(value)
 					maybeRestart()
 				end)
 			elseif settings["type"] == "select" then
@@ -134,10 +154,7 @@ M.settings = function()
 					prompt = "Update " .. name .. " to what?",
 					telescope = require("telescope.themes").get_cursor(),
 				}, function(value)
-					if sessionOptions[name] == value then
-						return
-					end
-					sessionOptions[name] = value
+					call_setter(value)
 					maybeRestart()
 				end)
 			else

@@ -34,7 +34,7 @@ local ensureGwatch = function()
 		return true
 	end
 
-	options = cfg.update({ gwatchPath = getGwatchPath() })
+	options = cfg.update_session_options({ gwatchPath = getGwatchPath() })
 	if options.gwatchPath ~= "" then
 		return true
 	end

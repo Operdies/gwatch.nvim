@@ -56,41 +56,24 @@ function Runner.Trigger()
 	touchFile(Runner.hotkeyFile)
 end
 
-function Runner.Watch(opts)
+function Runner.Watch()
 	local cfg = require("gwatch.config")
-	local options = cfg.options()
-	local project_overrides = cfg.project_overrides()
+
+	local opts = cfg.options()
+	local term_opts = getopts()
+	term_opts.env = opts.environment
 
 	Runner.Stop()
-	local ftype = vim.bo.filetype
-	local ftypeOpts = {}
-	if options and options.lang and options.lang[ftype] then
-		ftypeOpts = options.lang[ftype] or {}
-	end
 
-	if project_overrides and project_overrides.lang and project_overrides.lang[ftype] then
-		ftypeOpts = vim.tbl_deep_extend("force", ftypeOpts, project_overrides.lang[ftype])
-	end
+	local action = opts.callback and type(opts.callback) == "function" and opts.callback or function(_) end
 
-	opts = vim.tbl_deep_extend(
-		"force",
-		{},
-		getopts(),
-		options.default,
-		opts or {},
-		project_overrides,
-		ftypeOpts,
-		cfg.overrides() or {}
-	)
-	local cb = opts.callback and type(opts.callback) == "function" and opts.callback or function(_) end
-
-	opts.on_stdout = function(_, data, _)
+	term_opts.on_stdout = function(_, data, _)
 		local s = stringJoin(data, "\r\n")
 		if string.len(s) > 0 then
-			cb(s)
+			action(s)
 		end
 	end
-	opts.on_stderr = opts.on_stdout
+	term_opts.on_stderr = term_opts.on_stdout
 
 	local arguments = {}
 	if opts.eventMask then
@@ -104,10 +87,11 @@ function Runner.Watch(opts)
 	end
 
 	-- always watch a temp file so we can manually trigger events
-	local tempname = vim.fn.tempname()
-	Runner.hotkeyFile = tempname
+	Runner.hotkeyFile = vim.fn.tempname()
+
+	-- Run Trigger() to create the file
 	Runner.Trigger()
-	local patterns = { tempname }
+	local patterns = { Runner.hotkeyFile }
 
 	if opts.trigger == "hotkey" then
 		-- override the event mask to only watch for write events
@@ -127,7 +111,7 @@ function Runner.Watch(opts)
 		return vim.inspect(table, { newline = "\r\n" })
 	end
 
-	local cmd = { options.gwatchPath }
+	local cmd = { opts.gwatchPath }
 	for k, v in pairs(arguments) do
 		cmd[#cmd + 1] = "-" .. k
 		cmd[#cmd + 1] = v
@@ -137,23 +121,19 @@ function Runner.Watch(opts)
 		cmd[#cmd + 1] = v
 	end
 
-	cb(
-		"gwatching "
-			.. inspect(patterns)
-			.. "\r\nWith arguments "
-			.. inspect(arguments)
-			.. " in "
-			.. inspect(opts.cwd)
-			.. "\n\n\r"
-	)
+	action("gwatching " .. inspect(patterns) .. "\r\nWith arguments " .. inspect(arguments)	-- .. " with options "
+	-- .. inspect(opts)
+	-- .. " with terminal options "
+	-- .. inspect(term_opts)
+ .. "\n\n\r")
 
 	local ok = true
-	ok, Runner.pid = pcall(vim.fn.jobstart, cmd, opts)
+	ok, Runner.pid = pcall(vim.fn.jobstart, cmd, term_opts)
 	if ok == false then
 		Runner.pid = nil
 		vim.notify("Failed to start command " .. vim.inspect(cmd), vim.log.levels.ERROR)
-		cb("Failed to start " .. inspect(cmd) .. "\r\n")
-		cb("Failed to start " .. inspect(options) .. "\r\n")
+		action("Failed to start " .. inspect(cmd) .. "\r\n")
+		action("Failed to start " .. inspect(opts) .. "\r\n")
 	end
 end
 
