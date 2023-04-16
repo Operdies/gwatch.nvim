@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "basicProperties": {
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "The command to execute. This will be invoked in a shell using 'bash -c COMMAND'. The tokens '%e' and '%f' will be replaced by the event type and file path, respectively."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["block", "kill", "concurrent"],
+          "description": "This sets the executor behavior when multiple events occur before the command has finished.\nBlock: Ignore events until the executor has finished.\nKill: Kill the executor when a new event occurs.\nConcurrent: Run the executor concurrently for each event."
+        },
+        "trigger": {
+          "type": "string",
+          "enum": ["hotkey", "watch"],
+          "description": "This sets the trigger behavior.\nHotkey: The command will be triggered by a hotkey.\nWatch: The command will be triggered by file events."
+        },
+        "window position": {
+          "type": "string",
+          "enum": ["left", "right", "top", "bottom"],
+          "description": "This sets the position of the ouput buffer window."
+        },
+        "window height": {
+          "type": "number",
+          "minimum": 1,
+          "description": "The height of the output buffer window in lines."
+        },
+        "window width": {
+          "type": "number",
+          "minimum": 10,
+          "description": "The width of the output buffer window in characters."
+        },
+        "patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "The patterns to watch. This is a list of glob patterns. If this is omitted, the default pattern '**' will be used."
+        },
+        "eventMask": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["Create", "Write", "Remove", "Rename", "Chmod"]
+          },
+          "minItems": 1,
+          "description": "The events to watch. This is a list of event types. If this is omitted, the default event type 'Write' will be used."
+        },
+        "gwatchPath": {
+          "type": "string",
+          "description": "Optional path to the gwatch executable."
+        }
+      },
+      "required": ["command"]
+    },
+    "langProperties": {
+      "properties": {
+        "lang": {
+          "type": "object",
+          "examples": [
+            { "c": { "command": "make" } },
+            { "rust": { "command": "cargo run" } },
+            { "python": { "command": "python %f" } }
+          ],
+          "additionalProperties": {
+            "$ref": "#/definitions/basicProperties"
+          }
+        }
+      }
+    },
+    "profileProperties": {
+      "properties": {
+        "profiles": {
+          "type": "object",
+          "examples": [{ "echo": { "command": "echo %e on %f" } }],
+          "additionalProperties": {
+            "$ref": "#/definitions/basicProperties"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/definitions/basicProperties"
+    },
+    {
+      "$ref": "#/definitions/langProperties"
+    },
+    {
+      "$ref": "#/definitions/profileProperties"
+    },
+    {
+      "type": "object",
+      "additionalProperties": true
+    }
+  ]
+}

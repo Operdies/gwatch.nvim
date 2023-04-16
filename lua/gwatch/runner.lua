@@ -77,7 +77,11 @@ function Runner.Watch()
 
 	local arguments = {}
 	if opts.eventMask then
-		arguments["eventMask"] = opts.eventMask
+		if type(opts.eventMask) == "string" then
+			arguments["eventMask"] = opts.eventMask
+		elseif type(opts.eventMask) == "table" then
+			arguments["eventMask"] = stringJoin(opts.eventMask, "|")
+		end
 	end
 	if opts.mode then
 		arguments["mode"] = opts.mode
@@ -121,11 +125,16 @@ function Runner.Watch()
 		cmd[#cmd + 1] = v
 	end
 
-	action("gwatching " .. inspect(patterns) .. "\r\nWith arguments " .. inspect(arguments)	-- .. " with options "
-	-- .. inspect(opts)
-	-- .. " with terminal options "
-	-- .. inspect(term_opts)
- .. "\n\n\r")
+	action(
+		"gwatching "
+			.. inspect(patterns)
+			.. "\r\nWith arguments "
+			.. inspect(arguments) -- .. " with options "
+			-- .. inspect(opts)
+			-- .. " with terminal options "
+			-- .. inspect(term_opts)
+			.. "\n\n\r"
+	)
 
 	local ok = true
 	ok, Runner.pid = pcall(vim.fn.jobstart, cmd, term_opts)
