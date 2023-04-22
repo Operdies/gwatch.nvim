@@ -76,13 +76,6 @@ function Runner.Watch()
 	term_opts.on_stderr = term_opts.on_stdout
 
 	local arguments = {}
-	if opts.eventMask then
-		if type(opts.eventMask) == "string" then
-			arguments["eventMask"] = opts.eventMask
-		elseif type(opts.eventMask) == "table" then
-			arguments["eventMask"] = stringJoin(opts.eventMask, "|")
-		end
-	end
 	if opts.mode then
 		arguments["mode"] = opts.mode
 	end
@@ -98,8 +91,9 @@ function Runner.Watch()
 	local patterns = { Runner.hotkeyFile }
 
 	if opts.trigger == "hotkey" then
-		-- override the event mask to only watch for write events
-		opts.eventMask = "Write"
+		-- override the event mask to only watch for WRITE|CHMOD
+    -- On mac, touching seems to cause a chmod event, while it causes a write event on linux
+		opts.eventMask = "WRITE|CHMOD"
 	else
 		table.insert(patterns, ".")
 		if type(opts.patterns) == "string" then
@@ -108,6 +102,14 @@ function Runner.Watch()
 			for _, pattern in ipairs(opts.patterns) do
 				table.insert(patterns, pattern)
 			end
+		end
+	end
+
+	if opts.eventMask then
+		if type(opts.eventMask) == "string" then
+			arguments["eventMask"] = opts.eventMask
+		elseif type(opts.eventMask) == "table" then
+			arguments["eventMask"] = stringJoin(opts.eventMask, "|")
 		end
 	end
 
