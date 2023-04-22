@@ -84,6 +84,22 @@ local settingsTree = {
 	mode = { type = "select", options = { "block", "kill", "concurrent" } },
 	trigger = { type = "select", options = { "hotkey", "watch" } },
 	["window position"] = { type = "select", options = { "left", "right", "top", "bottom" } },
+	["create gwatch.json"] = {
+		func = function()
+			local cwd = vim.fn.getcwd()
+			local filepath = cwd .. "/gwatch.json"
+			if vim.fn.filereadable(filepath) == 0 then
+				local content = {
+					"{",
+					'\t"$schema": "https://raw.githubusercontent.com/Operdies/gwatch.nvim/main/schema.json"',
+					"}",
+				}
+				vim.fn.writefile(content, filepath)
+				vim.notify("Created gwatch.json file in " .. cwd)
+			end
+			vim.cmd("edit " .. filepath)
+		end,
+	},
 	profile = {
 		type = "select",
 		setter = function(name)
@@ -157,6 +173,8 @@ M.settings = function()
 					call_setter(value)
 					maybeRestart()
 				end)
+			elseif settings["type"] == nil then
+				settings.func()
 			else
 				return
 			end

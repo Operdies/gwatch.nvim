@@ -54,8 +54,7 @@
           "type": "string",
           "description": "Optional path to the gwatch executable."
         }
-      },
-      "required": ["command"]
+      }
     },
     "langProperties": {
       "properties": {
