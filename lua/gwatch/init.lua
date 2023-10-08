@@ -114,4 +114,10 @@ end
 
 ensureGwatch()
 
+vim.api.nvim_create_user_command("GwatchToggle", M.toggle, { desc = "Toggle Gwatch" })
+vim.api.nvim_create_user_command("GwatchStart", M.start, { desc = "Start Gwatch" })
+vim.api.nvim_create_user_command("GwatchStop", M.stop, { desc = "Stop Gwatch" })
+vim.api.nvim_create_user_command("GwatchSettings", M.settings, { desc = "Gwatch Settings" })
+vim.api.nvim_create_user_command("GwatchTrigger", M.trigger, { desc = "Trigger Gwatch" })
+
 return M
