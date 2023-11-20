@@ -24,8 +24,49 @@ function M.setup(options)
 	configOptions = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
 end
 
+function add_lang_debug_entry(lang, tbl)
+	local bin = tbl.bin
+	if bin == nil then
+		print("gwatch.nvim: bin is required for debug options")
+		return
+	end
+
+	local e, dap = pcall(require, "dap")
+	if not e then
+		return
+	end
+	local dap_config = {
+		name = tbl.name or ("debug: " .. lang),
+		program = bin,
+		args = tbl.args or {},
+		type = tbl.type or "codelldb",
+		request = "launch",
+		cwd = tbl.cwd or "${workspaceFolder}",
+		stopOnEntry = tbl.stopOnEntry or false,
+		runInTerminal = tbl.stopOnEntry or false,
+	}
+	local target = dap.configurations[lang]
+	if target == nil then
+		target = {}
+		dap.configurations[lang] = target
+	end
+	for i, v in ipairs(target) do
+		if v.name == dap_config.name then
+			target[i] = dap_config
+			return
+		end
+	end
+	table.insert(target, 1, dap_config)
+end
+
 function M.update_session_options(options)
 	sessionOptions = vim.tbl_deep_extend("force", {}, sessionOptions, options or {})
+	local dbg = sessionOptions.debug
+	if dbg then
+		for k, v in pairs(dbg) do
+			add_lang_debug_entry(k, v)
+		end
+	end
 	return M.options()
 end
 
@@ -58,6 +99,17 @@ function M.profile()
 	end
 end
 
+local function set_profile(name)
+	local project_settings = M.project_overrides()
+	if project_settings and project_settings.profiles and project_settings.profiles[name] then
+		local profile = project_settings.profiles[name]
+		-- Unset lang overrides and environment. Otherwise we might unintentionally keep unwanted settings around when swiching profiles
+		sessionOptions.lang = nil
+		sessionOptions.environment = nil
+		M.update_session_options(profile)
+	end
+end
+
 function M.project_overrides()
 	local project_overrides = {}
 	-- get the current project directory
@@ -72,6 +124,16 @@ function M.project_overrides()
 		if not success then
 			vim.notify("Failed to parse gwatch.json file", vim.log.levels.ERROR)
 			project_overrides = {}
+		end
+		if not project_overrides then
+			return
+		end
+		if not sessionOptions.profile then
+			if project_overrides.profiles then
+				local p = project_overrides.profiles
+				sessionOptions.profile = vim.tbl_keys(p)[1]
+				set_profile(sessionOptions.profile)
+			end
 		end
 	end
 	return project_overrides
@@ -102,16 +164,7 @@ local settingsTree = {
 	},
 	profile = {
 		type = "select",
-		setter = function(name)
-			local project_settings = M.project_overrides()
-			if project_settings and project_settings.profiles and project_settings.profiles[name] then
-				local profile = project_settings.profiles[name]
-				-- Unset lang overrides and environment. Otherwise we might unintentionally keep unwanted settings around when swiching profiles
-				sessionOptions.lang = nil
-				sessionOptions.environment = nil
-				M.update_session_options(profile)
-			end
-		end,
+		setter = set_profile,
 		options = function()
 			local overrides = M.project_overrides()
 			if overrides and overrides.profiles then
