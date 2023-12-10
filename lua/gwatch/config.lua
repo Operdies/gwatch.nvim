@@ -20,10 +20,20 @@ local defaultSettings = {
 local configOptions = {}
 local sessionOptions = {}
 
-local function add_lang_debug_entry(lang, tbl)
+local function add_lang_debug_entry(name, tbl)
 	local bin = tbl.bin
 	if bin == nil then
 		print("gwatch.nvim: bin is required for debug options")
+		return
+	end
+	local lang = tbl.language
+	if lang == nil then
+		print("gwatch.nvim: language is required for debug options")
+		return
+	end
+	local type = tbl.type
+	if type == nil then
+		print("gwatch.nvim: type is required for debug options")
 		return
 	end
 
@@ -32,10 +42,10 @@ local function add_lang_debug_entry(lang, tbl)
 		return
 	end
 	local dap_config = {
-		name = tbl.name or ("debug: " .. lang),
+		name = name,
 		program = bin,
 		args = tbl.args or {},
-		type = tbl.type,
+		type = type,
 		request = "launch",
 		cwd = tbl.cwd or "${workspaceFolder}",
 		stopOnEntry = tbl.stopOnEntry or false,
@@ -56,15 +66,14 @@ end
 
 local function add_debug_entries(dbg)
 	if dbg then
-		for lang, tbl in pairs(dbg) do
-			add_lang_debug_entry(lang, tbl)
+		for language, tbl in pairs(dbg) do
+			add_lang_debug_entry(language, tbl)
 		end
 	end
 end
 
 function M.setup(options)
 	configOptions = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
-  add_debug_entries(configOptions.debug)
 end
 
 function M.update_session_options(options)
@@ -90,9 +99,10 @@ function M.options()
 	local project_overrides = with_lang(M.project_overrides())
 	local session = with_lang(sessionOptions)
 
-	local opts = vim.tbl_deep_extend("force", {}, defaultSettings, defaultSettings.default, cfg, project_overrides, session)
-  add_debug_entries(opts.debug)
-  return opts
+	local opts =
+		vim.tbl_deep_extend("force", {}, defaultSettings, defaultSettings.default, cfg, project_overrides, session)
+	add_debug_entries(opts.debug)
+	return opts
 end
 
 function M.profile()

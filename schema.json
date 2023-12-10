@@ -85,14 +85,14 @@
     "debugProperties": {
       "properties": {
         "debug": {
-          "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["name", "bin", "type"],
+            "additionalProperties": false,
+            "required": ["language", "bin", "type"],
             "properties": {
-              "name": {
+              "language": {
                 "type": "string",
-                "description": "The name of the debug configuration."
+                "description": "The language this configuration entry is relevant for. This is added to dap.configurations[language]."
               },
               "bin": {
                 "type": "string",
@@ -107,7 +107,7 @@
               },
               "type": {
                 "type": "string",
-                "description": "The type of debugger to use. Check nvim-dap for supported debuggers.",
+                "description": "The debug adapter to use. Refer to nvim-dap for available debug adapters.",
                 "anyOf": [
                   { "type": "string" },
                   { "enum": ["codelldb", "go", "delve", "python"] }
