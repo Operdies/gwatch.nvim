@@ -20,11 +20,7 @@ local defaultSettings = {
 local configOptions = {}
 local sessionOptions = {}
 
-function M.setup(options)
-	configOptions = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
-end
-
-function add_lang_debug_entry(lang, tbl)
+local function add_lang_debug_entry(lang, tbl)
 	local bin = tbl.bin
 	if bin == nil then
 		print("gwatch.nvim: bin is required for debug options")
@@ -39,11 +35,10 @@ function add_lang_debug_entry(lang, tbl)
 		name = tbl.name or ("debug: " .. lang),
 		program = bin,
 		args = tbl.args or {},
-		type = tbl.type or "codelldb",
+		type = tbl.type,
 		request = "launch",
 		cwd = tbl.cwd or "${workspaceFolder}",
 		stopOnEntry = tbl.stopOnEntry or false,
-		runInTerminal = tbl.stopOnEntry or false,
 	}
 	local target = dap.configurations[lang]
 	if target == nil then
@@ -59,14 +54,22 @@ function add_lang_debug_entry(lang, tbl)
 	table.insert(target, 1, dap_config)
 end
 
-function M.update_session_options(options)
-	sessionOptions = vim.tbl_deep_extend("force", {}, sessionOptions, options or {})
-	local dbg = sessionOptions.debug
+local function add_debug_entries(dbg)
 	if dbg then
-		for k, v in pairs(dbg) do
-			add_lang_debug_entry(k, v)
+		for lang, tbl in pairs(dbg) do
+			add_lang_debug_entry(lang, tbl)
 		end
 	end
+end
+
+function M.setup(options)
+	configOptions = vim.tbl_deep_extend("force", {}, defaultSettings, options or {})
+  add_debug_entries(configOptions.debug)
+end
+
+function M.update_session_options(options)
+	sessionOptions = vim.tbl_deep_extend("force", {}, sessionOptions, options or {})
+	add_debug_entries(sessionOptions.debug)
 	return M.options()
 end
 
@@ -87,7 +90,9 @@ function M.options()
 	local project_overrides = with_lang(M.project_overrides())
 	local session = with_lang(sessionOptions)
 
-	return vim.tbl_deep_extend("force", {}, defaultSettings, defaultSettings.default, cfg, project_overrides, session)
+	local opts = vim.tbl_deep_extend("force", {}, defaultSettings, defaultSettings.default, cfg, project_overrides, session)
+  add_debug_entries(opts.debug)
+  return opts
 end
 
 function M.profile()

@@ -81,6 +81,62 @@
           }
         }
       }
+    },
+    "debugProperties": {
+      "properties": {
+        "debug": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["name", "bin", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the debug configuration."
+              },
+              "bin": {
+                "type": "string",
+                "description": "The path to the executable to debug."
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The arguments to pass to the executable."
+              },
+              "type": {
+                "type": "string",
+                "description": "The type of debugger to use. Check nvim-dap for supported debuggers.",
+                "anyOf": [
+                  { "type": "string" },
+                  { "enum": ["codelldb", "go", "delve", "python"] }
+                ]
+              },
+              "cwd": {
+                "type": "string",
+                "description": "The working directory to use."
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Whether to stop on entry."
+              }
+            }
+          },
+          "examples": [
+            {
+              "c": {
+                "name": "debug main",
+                "bin": "${workspaceFolder}/main",
+                "args": [],
+                "type": "codelldb",
+                "cwd": "${workspaceFolder}",
+                "stopOnEntry": false
+              }
+            }
+          ]
+        }
+      }
     }
   },
   "allOf": [
@@ -92,6 +148,9 @@
     },
     {
       "$ref": "#/definitions/profileProperties"
+    },
+    {
+      "$ref": "#/definitions/debugProperties"
     },
     {
       "type": "object",
